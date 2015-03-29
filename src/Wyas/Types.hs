@@ -5,4 +5,5 @@ data LispVal = Atom String
              | DottedList [LispVal] LispVal
              | Number Integer
              | String String
+             | Character Char
              | Bool Bool deriving (Show)

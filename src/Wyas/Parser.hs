@@ -1,32 +1,45 @@
-module Wyas.Parser where
+module Wyas.Parser
+    ( parseNumber
+    , parseCharLiteral
+    , parseString
+    , parseAtom
+    , parseList
+    , parseQuotedList
+    , parseDottedList
+    , parseExpr
+    , readExpr
+    ) where
 
 import Wyas.Types
 import Control.Monad
 import Text.ParserCombinators.Parsec hiding (spaces)
 
-symbol :: Parser Char
-symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
-
-escapableChar :: Parser Char
-escapableChar = oneOf "rnt\\"
-
-escapedChar :: Parser Char
-escapedChar = char '\\' >> escapableChar
-
 spaces :: Parser ()
 spaces = skipMany1 space
 
-parseString :: Parser LispVal
--- parseString = char '"' >> many (noneOf "\"" <|> escapedChar) >>= \x -> char '"' >> return (String x)
-parseString = do
-                _ <- char '"'
-                x <- many (noneOf "\"" <|> escapedChar)
-                _ <- char '"'
-                return $ String x
+symbol :: Parser Char
+symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
+
+escaped :: Parser Char
+escaped = char '\\' >> choice specialCharParsers
+  where
+    specialCharParsers           = zipWith escapedChar specialCharCodes specialChars
+    escapedChar code specialChar = char code >> return specialChar
+    specialCharCodes             = ['f',  'n',  'r',  't',  '\\', '"']
+    specialChars                 = ['\f', '\n', '\r', '\t', '\\', '\"']
 
 parseNumber :: Parser LispVal
--- parseNumber = many1 digit >>= return . Number . read
 parseNumber = liftM (Number . read) $ many1 digit
+
+parseCharLiteral :: Parser LispVal
+parseCharLiteral = liftM Character (char '#' >> char '\\' >> anyChar)
+
+parseString :: Parser LispVal
+parseString = do
+                _ <- char '"'
+                x <- many (escaped <|> noneOf "\"")
+                _ <- char '"'
+                return $ String x
 
 parseAtom :: Parser LispVal
 parseAtom = do
@@ -38,10 +51,33 @@ parseAtom = do
                          "#f" -> Bool False
                          _ -> Atom atom
 
+parseList :: Parser LispVal
+parseList = liftM List $ sepBy parseExpr spaces
+
+parseQuotedList :: Parser LispVal
+parseQuotedList = do
+                    _ <- char '\''
+                    x <- parseExpr
+                    return $ List [Atom "quote", x]
+
+parseDottedList :: Parser LispVal
+parseDottedList = do
+                    listHead <- endBy parseExpr spaces
+                    listTail <- char '.' >> spaces >> parseExpr
+                    return $ DottedList listHead listTail
+
 parseExpr :: Parser LispVal
-parseExpr = parseString <|> parseNumber <|> parseAtom
+parseExpr =  parseNumber
+         <|> parseCharLiteral
+         <|> parseString
+         <|> parseAtom
+         <|> parseQuotedList
+         <|> do _ <- char '('
+                x <- try parseList <|> parseDottedList
+                _ <- char ')'
+                return x
 
 readExpr :: String -> String
 readExpr input = case parse parseExpr "lisp" input of
-                   Left err -> "Syntax error in " ++ show err
+                   Left err -> "Error: " ++ show err
                    Right val -> "Valid: " ++ show val
