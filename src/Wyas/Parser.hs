@@ -77,7 +77,7 @@ parseExpr =  parseNumber
                 _ <- char ')'
                 return x
 
-readExpr :: String -> String
+readExpr :: String -> LispVal
 readExpr input = case parse parseExpr "lisp" input of
-                   Left err -> "Error: " ++ show err
-                   Right val -> "Valid: " ++ show val
+                   Left err -> String $ "Error: " ++ show err
+                   Right val -> val
