@@ -1,7 +1,13 @@
-module Wyas.Types (LispVal(..)) where
+module Wyas.Types
+    ( LispVal(..)
+    , LispError(..)
+    , ThrowsError
+    , trapError
+    , extractValue
+    ) where
 
-import Text.ParserCombinators.Parsec (ParseError)
-import Control.Monad.Error
+import           Control.Monad.Error
+import           Text.ParserCombinators.Parsec (ParseError)
 
 data LispVal = Atom String
              | Bool Bool
@@ -49,11 +55,14 @@ showError (NotFunction message func) = concat [message, ": ", func]
 showError (NumArgs expected found) =
   concat ["Expected: ", show expected, " args; found values ", unwordsShowVal found]
 showError (TypeMismatch expected found) =
-  concat ["Invalid type: expected ", expected, "found, ", show found]
+  concat ["Invalid type: expected ", expected, " found, ", show found]
 showError (Parser parseErr) = "Parse error at " ++ show parseErr
 showError (Default message) = message
 
 type ThrowsError = Either LispError
 
--- trapError :: Either LispError String -> Either LispError String
+trapError :: ThrowsError String -> ThrowsError String
 trapError action = catchError action (return . show)
+
+extractValue :: ThrowsError a -> a
+extractValue (Right val) = val

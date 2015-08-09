@@ -1,18 +1,10 @@
 module Wyas.Parser
-    ( parseNumber
-    , parseCharLiteral
-    , parseString
-    , parseAtom
-    , parseList
-    , parseQuotedList
-    , parseDottedList
-    , parseExpr
-    , readExpr
+    ( readExpr
     ) where
 
-import Wyas.Types
-import Control.Monad
-import Text.ParserCombinators.Parsec hiding (spaces)
+import           Control.Monad.Error
+import           Text.ParserCombinators.Parsec hiding (spaces)
+import           Wyas.Types
 
 spaces :: Parser ()
 spaces = skipMany1 space
@@ -29,10 +21,10 @@ escaped = char '\\' >> choice specialCharParsers
     specialChars                 = ['\f', '\n', '\r', '\t', '\\', '\"']
 
 parseNumber :: Parser LispVal
-parseNumber = liftM (Number . read) $ many1 digit
+parseNumber = fmap (Number . read) $ many1 digit
 
 parseCharLiteral :: Parser LispVal
-parseCharLiteral = liftM Character (char '#' >> char '\\' >> anyChar)
+parseCharLiteral = fmap Character (char '#' >> char '\\' >> anyChar)
 
 parseString :: Parser LispVal
 parseString = do
@@ -52,7 +44,7 @@ parseAtom = do
                          _ -> Atom atom
 
 parseList :: Parser LispVal
-parseList = liftM List $ sepBy parseExpr spaces
+parseList = fmap List $ sepBy parseExpr spaces
 
 parseQuotedList :: Parser LispVal
 parseQuotedList = do
@@ -77,7 +69,7 @@ parseExpr =  parseNumber
                 _ <- char ')'
                 return x
 
-readExpr :: String -> LispVal
+readExpr :: String -> ThrowsError LispVal
 readExpr input = case parse parseExpr "lisp" input of
-                   Left err -> String $ "Error: " ++ show err
-                   Right val -> val
+                   Left err -> throwError $ Parser err
+                   Right val -> return val

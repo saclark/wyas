@@ -1,8 +1,12 @@
 module Wyas where
 
-import Wyas.Eval
-import Wyas.Parser
-import System.Environment
+import           System.Environment
+import           Wyas.Eval
+import           Wyas.Parser
+import           Wyas.Types         (extractValue, trapError)
 
 main :: IO ()
-main = getArgs >>= print . eval . readExpr . head
+main = do
+  args <- getArgs
+  let evaled = fmap show $ readExpr (head args) >>= eval
+  putStrLn $ extractValue $ trapError evaled
