@@ -11,6 +11,11 @@ eval val@(Number _)             = return val
 eval val@(Character _)          = return val
 eval val@(String _)             = return val
 eval (List [Atom "quote", val]) = return val
+eval (List [Atom "if", predicate, conseq, alt]) =
+     do result <- eval predicate
+        case result of
+             Bool False -> eval alt
+             _  -> eval conseq
 eval (List (Atom func:args))    = mapM eval args >>= apply func
 eval badForm                    = throwError $ BadSpecialForm "Unrecognized special form" badForm
 
@@ -68,9 +73,9 @@ unpackString val        = throwError $ TypeMismatch "string" val
 boolBinop :: (LispVal -> ThrowsError a) -> (a -> a -> Bool) -> [LispVal] -> ThrowsError LispVal
 boolBinop unpacker op args = if length args /= 2
                              then throwError $ NumArgs 2 args
-                             else do left  <- unpacker $ args !! 0
-                                     right <- unpacker $ args !! 1
-                                     return $ Bool $ left `op` right
+                             else do arg0 <- unpacker $ args !! 0
+                                     arg1 <- unpacker $ args !! 1
+                                     return $ Bool $ arg0 `op` arg1
 
 unpackNum :: LispVal -> ThrowsError Integer
 unpackNum (Number n) = return n
