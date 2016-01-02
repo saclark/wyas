@@ -1,8 +1,10 @@
+{-# LANGUAGE FlexibleContexts #-}
+
 module Wyas.Parser
     ( readExpr
     ) where
 
-import           Control.Monad.Error
+import           Control.Monad.Except
 import           Text.ParserCombinators.Parsec hiding (spaces)
 import           Wyas.Types
 

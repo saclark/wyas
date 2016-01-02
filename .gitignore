@@ -24,6 +24,8 @@ dist
 /cabal-install/dist/
 /cabal-install/Setup
 
+# Stack
+.stack-work
 
 # editor temp files
 *#

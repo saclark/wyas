@@ -2,7 +2,7 @@ module Wyas.Eval
     ( eval
     ) where
 
-import           Control.Monad.Error (throwError)
+import           Control.Monad.Except (throwError)
 import           Wyas.Types
 
 eval :: LispVal -> ThrowsError LispVal

@@ -6,7 +6,7 @@ module Wyas.Types
     , extractValue
     ) where
 
-import           Control.Monad.Error
+import           Control.Monad.Except
 import           Text.ParserCombinators.Parsec (ParseError)
 
 data LispVal = Atom String
@@ -43,10 +43,6 @@ data LispError = NumArgs Integer [LispVal]
 
 instance Show LispError where
   show = showError
-
-instance Error LispError where
-  noMsg = Default "An error has ocurred"
-  strMsg = Default
 
 showError :: LispError -> String
 showError (UnboundVar message varName) = concat [message, ": ", varName]
